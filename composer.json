@@ -1,0 +1,25 @@
+{
+    "name": "jobsys/post-module",
+    "description": "",
+    "license": "MIT",
+    "type": "laravel-module",
+    "authors": [
+        {
+            "name": "sinceow",
+            "email": "sinceow@163.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Post\\": ""
+        }
+    }
+}
