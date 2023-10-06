@@ -11,7 +11,7 @@
 |
 */
 
-$route_prefix = config('module.Post.route_prefix', 'manager');
+$route_prefix = config('post.route_prefix', 'manager');
 $route_url_prefix = $route_prefix ? $route_prefix . '/' : '';
 $route_name_prefix = $route_prefix ? $route_prefix . '.' : '';
 

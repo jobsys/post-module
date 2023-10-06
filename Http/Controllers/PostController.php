@@ -4,202 +4,161 @@ namespace Modules\Post\Http\Controllers;
 
 use App\Http\Controllers\BaseManagerController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Inertia\Inertia;
 use Modules\Post\Entities\Post;
 use Modules\Post\Entities\PostGroup;
 use Modules\Starter\Emnus\State;
+use Modules\Starter\Entities\Category;
 
 class PostController extends BaseManagerController
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function pagePost()
-    {
+	public function pagePost(Request $request)
+	{
 
-        $group_options = PostGroup::get(['id', 'display_name'])->map(function (PostGroup $item) {
-            return [
-                'value' => $item->id,
-                'label' => $item->display_name,
-            ];
-        })->toArray();
+		$group = $request->input('group', 'news');
 
-        return Inertia::render('PagePost@Post', [
-            'groupOptions' => $group_options,
-        ]);
-    }
+		$category_options = Category::where('module', 'post')->where('group', $group)->where('homology_id', 0)->get(['id', 'name'])
+			->map(function ($item) {
+				return ['label' => $item->name, 'value' => $item->id];
+			})->toArray();
 
+		return Inertia::render('PagePost@Post', [
+			'categoryOptions' => $category_options,
+		]);
+	}
 
-    public function groupItems(Request $request)
-    {
-        $display_name = $request->input('display_name');
+	public function items(Request $request)
+	{
 
-        $pagination = PostGroup::withCount(['posts'])
-            ->when($display_name, function ($query) use ($display_name) {
-                return $query->where('display_name', 'like', '%' . $display_name . '%');
-            })
-            ->paginate();
+		$pagination = Post::filterable()->with(['category:id,name'])->where('homology_id', 0)->orderByDesc('sort_order')
+			->select(['id', 'category_id', 'title', 'slug', 'brief', 'cover', 'lang', 'is_top', 'is_active', 'sort_order', 'views_count', 'started_at', 'ended_at', 'created_at'])
+			->paginate();
 
-        return $this->json($pagination);
-    }
-
-    public function groupEdit(Request $request)
-    {
-
-        list($input, $error) = land_form_validate(
-            $request->only('id', 'display_name'),
-            [
-                'display_name' => 'bail|required|string',
-            ],
-            [
-                'display_name' => '分类名称',
-            ]
-        );
-
-        if ($error) {
-            return $this->message($error);
-        }
-
-        $unique = land_is_model_unique($input, PostGroup::class, 'display_name', true);
-
-        if (!$unique) {
-            return $this->message('该分类已经存在');
-        }
+		log_access('查看新闻公告列表');
 
 
-        if (isset($input['id']) && $input['id']) {
-            $result = PostGroup::where('id', $input['id'])->update($input);
-        } else {
-            $name = pinyin_abbr($input['display_name']);
+		return $this->json($pagination);
+	}
 
-            $index = 1;
-            while (!land_is_model_unique(['name' => $name], PostGroup::class, 'name', true)) {
-                $name = $name . $index;
-                $index += 1;
-            }
-            $input['name'] = $name;
-            $result = PostGroup::create($input);
-        }
+	public function homologyItems(Request $request)
+	{
+		$id = $request->input('id');
+
+		$items = Post::where('homology_id', $id)->get();
+
+		return $this->json($items);
+	}
 
 
-        log_access(isset($input['id']) && $input['id'] ? '编辑新闻公告分类' : '新建新闻公告分类', $input['id'] ?? $result->id);
 
-        return $this->json(null, $result ? State::SUCCESS : State::FAIL);
-    }
+	public function item(Request $request, $id)
+	{
+		$item = Post::where('id', $id)->first();
 
-    public function groupDelete(Request $request)
-    {
-        $id = $request->input('id');
-        $item = PostGroup::where('id', $id)->first();
+		if (!$item) {
+			return $this->json(null, State::NOT_FOUND);
+		}
 
-        if (!$item) {
-            return $this->json(null, State::NOT_ALLOWED);
-        }
+		log_access('查看新闻公告详情', $id);
 
-        $is_empty = Post::where('post_group_id', $id)->count() == 0;
+		return $this->json($item);
+	}
 
-        if (!$is_empty) {
-            return $this->json(null, '该分类下还有内容，删除失败');
-        }
+	public function edit(Request $request)
+	{
 
-        $result = $item->delete();
+		list($input, $error) = land_form_validate(
+			$request->only('id', 'cover', 'title', 'content', 'brief', 'category_id', 'homology_id', 'lang',
+				'slug', 'attachments', 'started_at', 'ended_at', 'sort_order', 'is_top', 'is_active'),
+			[
+				'category_id' => 'bail|required|numeric',
+				'title' => 'bail|required|string',
+				'content' => 'bail|required|string',
+			],
+			[
+				'category_id' => '分类',
+				'title' => '标题',
+				'content' => '内容',
+			]
+		);
 
-        log_access('删除新闻公告分类', $id);
-        return $this->json(null, $result ? State::SUCCESS : State::FAIL);
-    }
-
-    public function items(Request $request)
-    {
-
-        $post_group_id = $request->input('post_group_id', false);
-        $title = $request->input('title', false);
-
-        $pagination = Post::with(['group:id,display_name'])->when($post_group_id, function ($query, $post_group_id) {
-            $query->where('post_group_id', $post_group_id);
-        })->when($title, function ($query, $title) {
-            $query->where('title', 'like', "%{$title}%");
-        })->orderByDesc('sort_order')
-            ->select(['id', 'post_group_id', 'title', 'brief', 'cover', 'is_top', 'is_active', 'sort_order', 'views_count', 'started_at', 'ended_at', 'created_at'])
-            ->paginate();
-
-        log_access('查看新闻公告列表');
+		if ($error) {
+			return $this->message($error);
+		}
 
 
-        return $this->json($pagination);
-    }
+		if (isset($input['started_at']) && $input['started_at']) {
+			$input['started_at'] = land_predict_date_time($input['started_at'], 'date');
+		}
 
-    public function item(Request $request, $id)
-    {
-        $item = Post::where('id', $id)->first();
+		if (isset($input['ended_at']) && $input['ended_at']) {
+			$input['ended_at'] = land_predict_date_time($input['ended_at'], 'date');
+		}
 
-        if (!$item) {
-            return $this->json(null, State::NOT_FOUND);
-        }
+		if (!empty($input['started_at']) && !empty($input['ended_at']) && $input['ended_at']->isBefore($input['started_at'])) {
+			return $this->message('开始时间不能大于结束时间');
+		}
 
-        log_access('查看新闻公告详情', $id);
+		$input['homology_id'] = $input['homology_id'] ?? 0;
+		$input['lang'] = $input['lang'] ?? App::getLocale();
 
-        return $this->json($item);
-    }
+		if (isset($input['id']) && $input['id']) {
+			if ($input['homology_id'] === 0) {
+				$unique = land_is_model_unique($input, Post::class, 'slug', true, ['homology_id' => 0]);
+				if (!$unique) {
+					return $this->message('该分类标识已经存在');
+				}
+			}
 
-    public function edit(Request $request)
-    {
+			$result = Post::where('id', $input['id'])->update($input);
+			//由于支持多语言，在更新主体时，需要同时更新其他语言的SLUG
+			if ($input['lang'] === App::getLocale()) {
+				Post::where('homology_id', $input['id'])->update(['slug' => $input['slug']]);
+			}
+		} else {
+			if (!isset($input['slug']) || !$input['slug']) {
+				if (!isset($input['homology_id']) || !$input['homology_id']) {
+					$slug = mb_strlen($input['title']) > 10 ? pinyin_abbr($input['title']) : implode("-", pinyin($input['title']));
+					$index = 1;
+					while (!land_is_model_unique(['slug' => $slug], Post::class, 'slug', true, [
+						'homology_id' => 0
+					])) {
+						$slug = $slug . $index;
+						$index += 1;
+					}
+					$input['slug'] = $slug;
+				} else {
+					$homology = Post::find($input['homology_id']);
+					if ($homology) {
+						$input['slug'] = $homology->slug;
+					}
+				}
+			}
 
-        list($input, $error) = land_form_validate(
-            $request->only('id', 'cover', 'title', 'content', 'brief', 'post_group_id', 'attachments', 'started_at', 'ended_at', 'sort_order', 'is_top', 'is_active'),
-            [
-                'post_group_id' => 'bail|required|numeric',
-                'title' => 'bail|required|string',
-                'content' => 'bail|required|string',
-            ],
-            [
-                'post_group_id' => '分类',
-                'title' => '标题',
-                'content' => '内容',
-            ]
-        );
 
-        if ($error) {
-            return $this->message($error);
-        }
+			$input['creator_id'] = $this->login_user_id;
+			$result = Post::updateOrCreate(['slug' => $input['slug'], 'lang' => $input['lang']], $input);
+		}
+		log_access(isset($input['id']) && $input['id'] ? '编辑新闻公告' : '新建新闻公告', $input['id'] ?? $result->id);
 
+		return $this->json(null, $result ? State::SUCCESS : State::FAIL);
+	}
 
-        if (isset($input['started_at']) && $input['started_at']) {
-            $input['started_at'] = land_predict_date_time($input['started_at'], 'date');
-        }
+	public function delete(Request $request)
+	{
+		$id = $request->input('id');
+		$item = Post::where('id', $id)->first();
 
-        if (isset($input['ended_at']) && $input['ended_at']) {
-            $input['ended_at'] = land_predict_date_time($input['ended_at'], 'date');
-        }
+		if (!$item) {
+			return $this->json(null, State::NOT_ALLOWED);
+		}
 
-        if (!empty($input['started_at']) && !empty($input['ended_at']) && $input['ended_at']->isBefore($input['started_at'])) {
-            return $this->message('项目开始时间不能大于结束时间');
-        }
+		$result = $item->delete();
 
-        if (isset($input['id']) && $input['id']) {
-            $result = Post::where('id', $input['id'])->update($input);
-        } else {
-            $input['creator_id'] = $this->login_user_id;
-            $result = Post::create($input);
-        }
-        log_access(isset($input['id']) && $input['id'] ? '编辑新闻公告' : '新建新闻公告', $input['id'] ?? $result->id);
-
-        return $this->json(null, $result ? State::SUCCESS : State::FAIL);
-    }
-
-    public function delete(Request $request)
-    {
-        $id = $request->input('id');
-        $item = Post::where('id', $id)->first();
-
-        if (!$item) {
-            return $this->json(null, State::NOT_ALLOWED);
-        }
-
-        $result = $item->delete();
-
-        log_access('删除新闻公告', $id);
-        return $this->json(null, $result ? State::SUCCESS : State::FAIL);
-    }
+		log_access('删除新闻公告', $id);
+		return $this->json(null, $result ? State::SUCCESS : State::FAIL);
+	}
 
 
 }

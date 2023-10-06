@@ -17,10 +17,13 @@ namespace Modules\Post\Entities;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Starter\Entities\BaseModel;
+use Modules\Starter\Entities\Category;
+use Modules\Starter\Traits\Filterable;
 
 class Post extends BaseModel
 {
 
+	use Filterable;
 
     protected $casts = [
         'cover' => 'array',
@@ -38,9 +41,9 @@ class Post extends BaseModel
         'created_at_datetime'
     ];
 
-    public function group(): BelongsTo
+    public function category(): BelongsTo
     {
-        return $this->belongsTo(PostGroup::class, 'post_group_id', 'id');
+        return $this->belongsTo(Category::class);
     }
 
     public function user(): BelongsTo
