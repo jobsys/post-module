@@ -23,19 +23,21 @@ use Modules\Starter\Traits\Filterable;
 class Post extends BaseModel
 {
 
-	use Filterable;
+    use Filterable;
 
     protected $casts = [
         'cover' => 'array',
         'attachments' => 'array',
         'started_at' => 'datetime',
         'ended_at' => 'datetime',
+        'published_at' => 'datetime',
         'is_top' => 'boolean',
         'is_draft' => 'boolean',
         'is_active' => 'boolean'
     ];
 
     protected $appends = [
+        'published_at_date',
         'started_at_datetime',
         'ended_at_datetime',
         'created_at_datetime'

@@ -25,7 +25,8 @@ return new class extends Migration {
 			$table->json('attachments')->nullable()->comment('附件');
 			$table->dateTime('started_at')->nullable()->comment('开始时间');
 			$table->dateTime('ended_at')->nullable()->comment('结束时间');
-			$table->integer('views_count')->default(0)->comment('点击数');
+            $table->dateTime('published_at')->nullable()->comment('发布时间');
+            $table->integer('views_count')->default(0)->comment('点击数');
 			$table->integer('sort_order')->default(0)->comment('排序，数字越大越靠前');
 			$table->boolean('is_top')->default(false)->comment('是否置顶');
 			$table->boolean('is_draft')->default(false)->comment('是否为草稿');

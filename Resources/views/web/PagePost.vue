@@ -14,7 +14,7 @@
 
 			<template #functional>
 				<NewbieButton v-auth="'api.manager.post.edit'" type="primary" :icon="h(PlusOutlined)" @click="onEdit(false)"
-					>新增新闻资讯
+				>新增新闻资讯
 				</NewbieButton>
 			</template>
 		</NewbieTable>
@@ -42,73 +42,28 @@
 			<CategoryBox module="post" group="news"></CategoryBox>
 		</NewbieModal>
 
-		<NewbieModal v-model:visible="state.showHomologyModal" title="分类多语言管理" type="drawer" :width="1200">
-			<NewbieTable
-				ref="homologyTableRef"
-				:pagination="false"
-				:filterable="false"
-				:after-fetched="onAfterHomologyTableFetch"
-				:url="route('api.manager.post.homology', { id: state.currentHomology?.id })"
-				:columns="getHomologyColumns()"
-			>
-				<template #functional>
-					<a-dropdown>
-						<template #overlay>
-							<a-menu @click="({ key }) => onHomologyEdit({ lang: key })">
-								<a-menu-item v-for="lang in foreignLangOptions" :key="lang.value">
-									{{ lang.label }}
-								</a-menu-item>
-							</a-menu>
-						</template>
-						<a-button type="primary">
-							新增语言版本
-							<DownOutlined />
-						</a-button>
-					</a-dropdown>
-				</template>
-			</NewbieTable>
-		</NewbieModal>
-
-		<NewbieModal
-			v-model:visible="state.showHomologyEditorModal"
-			title="分类编辑"
-			:modal-props="{ bodyStyle: { height: '600px', overflow: 'auto' } }"
-		>
-			<NewbieForm
-				ref="formHomologyRef"
-				:submit-url="route('api.manager.post.edit')"
-				:fetch-url="state.url"
-				:auto-load="!!state.url"
-				:card-wrapper="false"
-				:form="getHomologyForm()"
-				:form-props="{ labelCol: { span: 4 }, wrapperCol: { span: 19 } }"
-				:closable="false"
-				:close="closeHomologyEditor"
-				:before-submit="onBeforeHomologyFormSubmit"
-				@success="closeHomologyEditor(true)"
-			/>
-		</NewbieModal>
+		<HomologyBox
+			ref="homologyBoxRef"
+			homologies-route="api.manager.post.homology"
+			homology-edit-route="api.manager.post.edit"
+			homology-item-route="api.manager.post.item"
+			homology-delete-route="api.manager.post.delete"
+			:homology-columns="getHomologyColumns"
+			:homology-form-items="getHomologyForm"
+		></HomologyBox>
 	</div>
 </template>
 
 <script setup>
-import { computed, h, inject, onMounted, reactive, ref } from "vue"
+import { h, inject, onMounted, reactive, ref } from "vue"
 import { useTableActions, useTableImage } from "jobsys-newbie"
-import { useFetch, useLabelFromOptionsValue, useModalConfirm, useProcessStatusSuccess } from "jobsys-newbie/hooks"
+import { useFetch, useModalConfirm, useProcessStatusSuccess } from "jobsys-newbie/hooks"
 import { message } from "ant-design-vue"
 import { router, usePage } from "@inertiajs/vue3"
-import {
-	DeleteOutlined,
-	DownOutlined,
-	EditOutlined,
-	GlobalOutlined,
-	PictureOutlined,
-	PlusOutlined,
-	UnorderedListOutlined,
-} from "@ant-design/icons-vue"
+import { DeleteOutlined, EditOutlined, PictureOutlined, PlusOutlined, UnorderedListOutlined } from "@ant-design/icons-vue"
 import CategoryBox from "@modules/Starter/Resources/views/web/components/CategoryBox.vue"
-import useSystemStore from "@manager/stores/system"
 import { findIndex } from "lodash-es"
+import HomologyBox from "@modules/Starter/Resources/views/web/components/HomologyBox.vue"
 
 const props = defineProps({
 	categoryOptions: {
@@ -120,28 +75,47 @@ const route = inject("route")
 const auth = inject("auth")
 
 const tableRef = ref()
-const homologyTableRef = ref()
-
-const systemStore = useSystemStore()
-
-const defaultLang = computed(() => systemStore.lang.defaultLang)
-const langOptions = computed(() => systemStore.lang.langOptions)
-const foreignLangOptions = computed(() => langOptions.value.filter((item) => item.value !== defaultLang.value))
+const homologyBoxRef = ref()
 
 const state = reactive({
 	showCategoryDrawer: false,
 	showEditorModal: false,
-	showGroupEditorModal: false,
-	currentHomology: null,
-	showHomologyEditorModal: false,
-	currentLang: undefined,
 	url: "",
 })
 
-const onAfterHomologyTableFetch = (res) => {
-	return {
-		items: res.result,
+const onEdit = (item) => {
+	state.url = item ? route("api.manager.post.item", { id: item.id }) : ""
+	state.showEditorModal = true
+}
+
+const closeEditorModal = (isRefresh) => {
+	if (isRefresh) {
+		tableRef.value.doFetch()
 	}
+	state.showEditorModal = false
+}
+
+const onCloseCategoryDrawer = () => {
+	router.reload({ only: ["categoryOptions"] })
+}
+
+const onDelete = (item) => {
+	const modal = useModalConfirm(
+		`该操作会同时删除其它语言版本，您确认要删除 ${item.title} 吗？`,
+		async () => {
+			try {
+				const res = await useFetch().post(route("api.manager.post.delete"), { id: item.id })
+				modal.destroy()
+				useProcessStatusSuccess(res, () => {
+					message.success("删除成功")
+					tableRef.value.doFetch()
+				})
+			} catch (e) {
+				modal.destroy(e)
+			}
+		},
+		true,
+	)
 }
 
 const getForm = () => [
@@ -150,6 +124,7 @@ const getForm = () => [
 		key: "category_id",
 		type: "select",
 		required: true,
+		width: 200,
 		options: props.categoryOptions,
 	},
 	{
@@ -161,9 +136,9 @@ const getForm = () => [
 		},
 	},
 	{
-		title: "分类标识",
+		title: "标识",
 		key: "slug",
-		help: "分类标识不能重复，如果不填，系统将会根据标题自动生成",
+		help: "标识不能重复，如果不填，系统将会根据标题自动生成",
 	},
 	{
 		key: "cover",
@@ -204,6 +179,12 @@ const getForm = () => [
 		},
 	},
 	{
+		title: "发布时间",
+		key: "published_at",
+		type: "date",
+		help: "该时间主要用于展示，如果为空则展示创建时间",
+	},
+	{
 		title: "是否置顶",
 		key: "is_top",
 		type: "switch",
@@ -221,48 +202,7 @@ const getForm = () => [
 	},
 ]
 
-const onEdit = (item) => {
-	state.url = item ? route("api.manager.post.item", { id: item.id }) : ""
-	state.showEditorModal = true
-}
-
-const closeEditorModal = (isRefresh) => {
-	if (isRefresh) {
-		tableRef.value.doFetch()
-	}
-	state.showEditorModal = false
-}
-
-const onCloseCategoryDrawer = () => {
-	router.reload({ only: ["categoryOptions"] })
-}
-
-const onDelete = (item) => {
-	const modal = useModalConfirm(
-		`您确认要删除 ${item.title} 吗？`,
-		async () => {
-			try {
-				const res = await useFetch().post(route("api.manager.post.delete"), { id: item.id })
-				modal.destroy()
-				useProcessStatusSuccess(res, () => {
-					message.success("删除成功")
-					tableRef.value.doFetch()
-				})
-			} catch (e) {
-				modal.destroy(e)
-			}
-		},
-		true,
-	)
-}
-
 const columns = () => [
-	{
-		title: "#",
-		key: "index",
-		width: 50,
-		customRender: ({ index }) => h("span", {}, index + 1),
-	},
 	{
 		title: "标题",
 		width: 200,
@@ -327,6 +267,12 @@ const columns = () => [
 		title: "发布时间",
 		width: 180,
 		ellipsis: true,
+		dataIndex: "published_at_date",
+	},
+	{
+		title: "创建时间",
+		width: 180,
+		ellipsis: true,
 		dataIndex: "created_at_datetime",
 	},
 	{
@@ -347,20 +293,8 @@ const columns = () => [
 						onEdit(record)
 					},
 				})
-			}
 
-			if (langOptions.value.length > 1 && record.lang === defaultLang.value) {
-				actions.push({
-					name: "多语言",
-					props: {
-						icon: h(GlobalOutlined),
-						size: "small",
-					},
-					action() {
-						state.currentHomology = record
-						state.showHomologyModal = true
-					},
-				})
+				homologyBoxRef.value?.useHomologyAction(actions, record)
 			}
 
 			if (auth("api.manager.post.delete")) {
@@ -380,111 +314,28 @@ const columns = () => [
 	},
 ]
 
-const onBeforeHomologyFormSubmit = ({ formatForm }) => {
-	formatForm.lang = state.currentLang
-	formatForm.homology_id = state.currentHomology?.id
-	formatForm.slug = state.currentHomology?.slug
-	return formatForm
-}
-
-const onHomologyEdit = ({ lang, item }) => {
-	if (item) {
-		state.url = route("api.manager.post.item", { id: item.id })
-	} else {
-		state.url = ""
-	}
-
-	state.currentLang = lang || undefined
-	state.showHomologyEditorModal = true
-}
-
-const closeHomologyEditor = (refresh) => {
-	state.showHomologyEditorModal = false
-	if (refresh) {
-		homologyTableRef.value.doFetch()
-	}
-}
-
-const getHomologyForm = () => {
+const getHomologyForm = (currentHomology) => {
 	const formItems = getForm()
-
-	formItems.unshift({
-		title: "语言版本",
-		key: "lang",
-		type: "select",
-		disabled: true,
-		options: langOptions.value,
-		defaultValue: state.currentLang,
-	})
-
-	const slugIndex = findIndex(formItems, { key: "slug" })
 	const categoryIndex = findIndex(formItems, { key: "category_id" })
 
-	formItems[slugIndex].disabled = true
-	formItems[slugIndex].defaultValue = state.currentHomology?.slug
-
 	formItems[categoryIndex].disabled = true
-	formItems[categoryIndex].defaultValue = state.currentHomology?.category_id
+	formItems[categoryIndex].defaultValue = currentHomology?.category_id
 
 	return formItems
 }
 
-const getHomologyColumns = () => {
-	return [
-		{
-			title: "语言版本",
-			dataIndex: "lang",
-			width: 120,
-			customRender({ record }) {
-				return h("span", {}, useLabelFromOptionsValue(record.lang, langOptions.value))
-			},
-		},
-		{
-			title: "标题",
-			dataIndex: "title",
-			width: 120,
-		},
-		{
-			title: "标识",
-			dataIndex: "slug",
-			width: 120,
-		},
-		{
-			title: "操作",
-			width: 160,
-			key: "operation",
-			align: "center",
-			fixed: "right",
-			customRender({ record }) {
-				const actions = []
-
-				actions.push({
-					name: "编辑",
-					props: {
-						icon: h(EditOutlined),
-						size: "small",
-					},
-					action() {
-						onHomologyEdit({ item: record })
-					},
-				})
-
-				actions.push({
-					name: "删除",
-					props: {
-						icon: h(DeleteOutlined),
-						size: "small",
-					},
-					action() {
-						onDelete(record)
-					},
-				})
-
-				return useTableActions(actions)
-			},
-		},
-	]
-}
+const getHomologyColumns = () => [
+	{
+		title: "标题",
+		dataIndex: "title",
+		width: 120,
+	},
+	{
+		title: "标识",
+		dataIndex: "slug",
+		width: 120,
+	},
+]
 
 onMounted(() => {
 	const create = usePage().props?.query?.create
