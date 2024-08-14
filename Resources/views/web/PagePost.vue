@@ -126,6 +126,9 @@ const getForm = () => [
 		required: true,
 		width: 200,
 		options: props.categoryOptions,
+		defaultProps: {
+			fieldNames: { label: "name", value: "id", children: "children" },
+		},
 	},
 	{
 		title: "标题",
@@ -212,19 +215,23 @@ const columns = () => [
 	},
 	{
 		title: "封面",
-		width: 120,
+		width: 80,
 		key: "cover",
 		align: "center",
-		customRender: ({ record }) => useTableImage(record.cover.url, h(PictureOutlined)),
+		customRender: ({ record }) => h("div", { class: "flex justify-center" }, useTableImage(record.cover, h(PictureOutlined))),
 	},
 	{
 		title: "所属分类",
-		width: 200,
 		dataIndex: ["category", "name"],
+		width: 140,
+		ellipse: true,
 		filterable: {
+			type: "cascade",
 			key: "category_id",
-			type: "select",
 			options: props.categoryOptions,
+			inputProps: {
+				fieldNames: { label: "name", value: "id", children: "children" },
+			},
 		},
 	},
 	{
@@ -267,13 +274,13 @@ const columns = () => [
 		title: "发布时间",
 		width: 180,
 		ellipsis: true,
-		dataIndex: "published_at_date",
+		dataIndex: "published_at",
 	},
 	{
 		title: "创建时间",
 		width: 180,
 		ellipsis: true,
-		dataIndex: "created_at_datetime",
+		dataIndex: "created_at",
 	},
 	{
 		title: "操作",

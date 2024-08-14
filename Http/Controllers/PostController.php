@@ -17,26 +17,22 @@ class PostController extends BaseManagerController
 
         $group = $request->input('group', 'news');
 
-        $category_options = Category::where('module', 'post')->where('group', $group)->where('homology_id', 0)->get(['id', 'name'])
-            ->map(function ($item) {
-                return ['label' => $item->name, 'value' => $item->id];
-            })->toArray();
+        $category_options = Category::whereNull('parent_id')->where('module', 'post')->where('group', $group)->orderBy('sort_order', 'DESC')->get();
+        $category_options = land_get_closure_tree($category_options);
 
         return Inertia::render('PagePost@Post', [
             'categoryOptions' => $category_options,
         ]);
     }
 
-    public function items(Request $request)
+    public function items(Request $request, $group = 'news')
     {
-
-        $pagination = Post::filterable()->with(['category:id,name'])->where('homology_id', 0)->orderByDesc('sort_order')
+        $pagination = Post::filterable()->withWhereHas('category', function ($query) use ($group) {
+            return $query->where('group', $group)->select('id', 'name');
+        })->where('homology_id', 0)->orderByDesc('sort_order')
             ->orderByDesc('created_at')
             ->select(['id', 'category_id', 'title', 'slug', 'brief', 'cover', 'lang', 'published_at', 'is_top', 'is_active', 'sort_order', 'views_count', 'started_at', 'ended_at', 'created_at'])
             ->paginate();
-
-        log_access('查看新闻公告列表');
-
 
         return $this->json($pagination);
     }
@@ -59,7 +55,7 @@ class PostController extends BaseManagerController
             return $this->json(null, State::NOT_FOUND);
         }
 
-        log_access('查看新闻公告详情', $id);
+        log_access("查看{$item->getModelName()}", $item);
 
         return $this->json($item);
     }
@@ -137,7 +133,6 @@ class PostController extends BaseManagerController
             $input['creator_id'] = $this->login_user_id;
             $result = Post::updateOrCreate(['slug' => $input['slug'], 'lang' => $input['lang']], $input);
         }
-        log_access(isset($input['id']) && $input['id'] ? '编辑新闻公告' : '新建新闻公告', $input['id'] ?? $result->id);
 
         return $this->json(null, $result ? State::SUCCESS : State::FAIL);
     }
@@ -153,7 +148,6 @@ class PostController extends BaseManagerController
 
         $result = $item->delete();
 
-        log_access('删除新闻公告', $id);
         return $this->json(null, $result ? State::SUCCESS : State::FAIL);
     }
 

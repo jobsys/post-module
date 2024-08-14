@@ -5,7 +5,7 @@
 ## 模块安装
 
 ```bash
-composer require jobsys/post-module
+composer require jobsys/post-module --dev
 ```
 
 ### 依赖

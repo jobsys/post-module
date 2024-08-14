@@ -28,8 +28,8 @@ return new class extends Migration {
             $table->dateTime('published_at')->nullable()->comment('发布时间');
             $table->integer('views_count')->default(0)->comment('点击数');
 			$table->integer('sort_order')->default(0)->comment('排序，数字越大越靠前');
-			$table->boolean('is_top')->default(false)->comment('是否置顶');
-			$table->boolean('is_draft')->default(false)->comment('是否为草稿');
+			$table->boolean('is_top')->default(false)->nullable()->comment('是否置顶');
+			$table->boolean('is_draft')->default(false)->nullable()->comment('是否为草稿');
 			$table->boolean('is_active')->default(true)->comment('是否激活');
 			$table->timestamps();
 		});

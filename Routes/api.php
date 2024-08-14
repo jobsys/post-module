@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -11,11 +12,8 @@
 |
 */
 
-$route_prefix = config('post.route_prefix', 'manager');
-$route_url_prefix = $route_prefix ? $route_prefix . '/' : '';
-$route_name_prefix = $route_prefix ? $route_prefix . '.' : '';
 
-Route::prefix("{$route_url_prefix}post")->name("api.{$route_name_prefix}post.")->group(function () {
+Route::prefix("manager/post")->name("api.manager.post.")->group(function () {
 	Route::post('/post', "PostController@edit")->name('edit');
 	Route::get('/post', 'PostController@items')->name('items');
 	Route::get('/post/homology', 'PostController@homologyItems')->name('homology');

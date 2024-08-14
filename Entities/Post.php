@@ -23,7 +23,7 @@ use Modules\Starter\Traits\Filterable;
 class Post extends BaseModel
 {
 
-    use Filterable;
+	protected $model_name = '资讯';
 
     protected $casts = [
         'cover' => 'array',
@@ -36,12 +36,14 @@ class Post extends BaseModel
         'is_active' => 'boolean'
     ];
 
-    protected $appends = [
-        'published_at_date',
-        'started_at_datetime',
-        'ended_at_datetime',
-        'created_at_datetime'
-    ];
+	protected $accessors = [
+		'published_at' => 'date',
+		'started_at' => 'datetime',
+		'ended_at' => 'datetime',
+		'created_at' => 'datetime',
+		'attachments' => 'file|1',
+		'cover' => 'file',
+	];
 
     public function category(): BelongsTo
     {
