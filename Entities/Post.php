@@ -41,7 +41,7 @@ class Post extends BaseModel
 		'started_at' => 'datetime',
 		'ended_at' => 'datetime',
 		'created_at' => 'datetime',
-		'attachments' => 'file|1',
+		'attachments' => 'file',
 		'cover' => 'file',
 	];
 
