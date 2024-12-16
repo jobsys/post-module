@@ -14,7 +14,7 @@
 
 			<template #functional>
 				<NewbieButton v-auth="'api.manager.post.edit'" type="primary" :icon="h(PlusOutlined)" @click="onEdit(false)"
-				>新增新闻资讯
+					>新增新闻资讯
 				</NewbieButton>
 			</template>
 		</NewbieTable>
@@ -150,7 +150,7 @@ const getForm = () => [
 		help: "不超过10M",
 		defaultProps: {
 			accept: ".png,.jpg,.jpeg",
-			action: route("api.manager.tool.uploadFile"),
+			action: route("api.manager.tool.upload"),
 			maxSize: 10,
 			type: "picture-card",
 			multipart: true,
@@ -174,7 +174,7 @@ const getForm = () => [
 		help: "不超过10M",
 		defaultProps: {
 			accept: ".png,.jpg,.jpeg,.doc,.docx,.ppt,.pptx,.zip,.rar,.pdf,.xls,.xlsx",
-			action: route("api.manager.tool.uploadFile"),
+			action: route("api.manager.tool.upload"),
 			maxSize: 10,
 			maxNum: 5,
 			type: "text",
