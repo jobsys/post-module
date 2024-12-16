@@ -15,7 +15,7 @@ return new class extends Migration {
 			$table->id();
 			$table->integer('category_id')->index()->comment('所属分组');
 			$table->string("lang")->default('zh_CN')->nullable()->index()->comment('语言');
-			$table->integer('homology_id')->default(0)->nullable()->index()->comment('关联ID');
+			$table->integer('homology_id')->nullable()->index()->comment('关联ID');
 			$table->string('slug')->index()->nullable()->comment('别名');
 			$table->integer('creator_id')->index()->comment('创建者');
 			$table->string('title')->comment('标题');
