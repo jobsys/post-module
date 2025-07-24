@@ -3,11 +3,10 @@
 namespace Modules\Post\Http\Controllers;
 
 use App\Http\Controllers\BaseManagerController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Inertia\Inertia;
 use Modules\Post\Entities\Post;
-use Modules\Starter\Emnus\State;
+use Modules\Starter\Enums\State;
 use Modules\Starter\Entities\Category;
 
 class PostController extends BaseManagerController
@@ -63,7 +62,7 @@ class PostController extends BaseManagerController
 			return $this->json(null, State::NOT_FOUND);
 		}
 
-		log_access("查看{$item->getModelName()}", $item);
+		log_access("查看{$item::getModelName()}", $item);
 
 		return $this->json($item);
 	}

@@ -1,9 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
 	public function up()
@@ -15,7 +14,7 @@ return new class extends Migration {
 			$table->id();
 			$table->integer('category_id')->index()->comment('所属分组');
 			$table->string("lang")->default('zh_CN')->nullable()->index()->comment('语言');
-			$table->integer('homology_id')->nullable()->index()->comment('关联ID');
+			$table->integer('homology_id')->default(0)->nullable()->index()->comment('关联ID');
 			$table->string('slug')->index()->nullable()->comment('别名');
 			$table->integer('creator_id')->index()->comment('创建者');
 			$table->string('title')->comment('标题');
@@ -25,13 +24,14 @@ return new class extends Migration {
 			$table->json('attachments')->nullable()->comment('附件');
 			$table->dateTime('started_at')->nullable()->comment('开始时间');
 			$table->dateTime('ended_at')->nullable()->comment('结束时间');
-            $table->dateTime('published_at')->nullable()->comment('发布时间');
-            $table->integer('views_count')->default(0)->comment('点击数');
+			$table->dateTime('published_at')->nullable()->comment('发布时间');
+			$table->integer('views_count')->default(0)->comment('点击数');
 			$table->integer('sort_order')->default(0)->comment('排序，数字越大越靠前');
 			$table->boolean('is_top')->default(false)->nullable()->comment('是否置顶');
 			$table->boolean('is_draft')->default(false)->nullable()->comment('是否为草稿');
 			$table->boolean('is_active')->default(true)->comment('是否激活');
 			$table->timestamps();
+			$table->comment('文章表');
 		});
 
 	}

@@ -18,23 +18,22 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Starter\Entities\BaseModel;
 use Modules\Starter\Entities\Category;
-use Modules\Starter\Traits\Filterable;
 
 class Post extends BaseModel
 {
 
 	protected $model_name = '资讯';
 
-    protected $casts = [
-        'cover' => 'array',
-        'attachments' => 'array',
-        'started_at' => 'datetime',
-        'ended_at' => 'datetime',
-        'published_at' => 'datetime',
-        'is_top' => 'boolean',
-        'is_draft' => 'boolean',
-        'is_active' => 'boolean'
-    ];
+	protected $casts = [
+		'cover' => 'array',
+		'attachments' => 'array',
+		'started_at' => 'datetime',
+		'ended_at' => 'datetime',
+		'published_at' => 'datetime',
+		'is_top' => 'boolean',
+		'is_draft' => 'boolean',
+		'is_active' => 'boolean'
+	];
 
 	protected $accessors = [
 		'published_at' => 'date',
@@ -45,13 +44,13 @@ class Post extends BaseModel
 		'cover' => 'file',
 	];
 
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(Category::class);
-    }
+	public function category(): BelongsTo
+	{
+		return $this->belongsTo(Category::class);
+	}
 
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'creator_id', 'id');
-    }
+	public function user(): BelongsTo
+	{
+		return $this->belongsTo(User::class, 'creator_id', 'id');
+	}
 }
